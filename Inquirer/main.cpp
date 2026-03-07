@@ -1,44 +1,3 @@
-# CppUtils
-
-Some C++ utils.
-
-## Random
-
-Content of [Random/main.cpp](Random/main.cpp):
-
-```cpp
-#include "Random.hpp"
-#include <iostream>
-
-int main()
-{
-	// Integer random generator
-	auto intGen = RANDOM_INSTANCE.Range<int>(1, 10);
-
-	std::cout << "Random integers:\n";
-	for (int i = 0; i < 5; ++i)
-	{
-		std::cout << intGen.Next() << std::endl;
-	}
-
-	// Floating point random generator
-	auto floatGen = RANDOM_INSTANCE.Range<float>(0.0f, 1.0f);
-
-	std::cout << "\nRandom floats:\n";
-	for (int i = 0; i < 5; ++i)
-	{
-		std::cout << floatGen.Next() << std::endl;
-	}
-
-	return 0;
-}
-```
-
-## Inquirer
-
-Content of [Inquirer/main.cpp](Inquirer/main.cpp):
-
-```cpp
 #include "Inquirer.hpp"
 #include "terminal.hpp"
 #include <iostream>
@@ -64,4 +23,3 @@ int main()
 
 	std::cout << "Deploy: " << (deploy ? "Yes" : "No") << "\n";
 }
-```
