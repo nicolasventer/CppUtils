@@ -1,0 +1,56 @@
+Checks: >
+  *,
+  -abseil-*,
+  -altera-*,
+  -fuchsia-*,
+  -llvmlibc-*,
+  -concurrency-mt-unsafe,
+  -cppcoreguidelines-avoid-do-while,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
+  -google-build-using-namespace,
+  -google-readability-braces-around-statements,
+  -google-readability-todo,
+  -hicpp-braces-around-statements,
+  -hicpp-vararg,
+  -llvm-header-guard,
+  -misc-non-private-member-variables-in-classes,
+  -misc-use-anonymous-namespace,
+  -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once,
+  -readability-identifier-length,
+  -readability-braces-around-statements,
+  -readability-use-anyofallof
+WarningsAsErrors: true
+HeaderFileExtensions: ["", "h", "hh", "hpp", "hxx"]
+ImplementationFileExtensions: ["c", "cc", "cpp", "cxx"]
+HeaderFilterRegex: ".*"
+SystemHeaders: false
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumPrefix
+    value: E
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: true

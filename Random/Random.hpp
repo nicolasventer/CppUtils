@@ -1,28 +1,29 @@
 #pragma once
 
 #include <random>
+#include <type_traits>
 
 class Random
 {
 public:
-	Random() : m_engine(std::random_device{}()) {}
+	Random() noexcept : engine(std::random_device{}()) {}
 	template <typename T> class Generator
 	{
 		using Distribution
 			= std::conditional_t<std::is_integral_v<T>, std::uniform_int_distribution<T>, std::uniform_real_distribution<T>>;
 
 	public:
-		Generator(std::mt19937& engine, T min, T max) : m_engine(engine), m_dist(min, max) {}
-		auto Next() -> T { return m_dist(m_engine); }
+		Generator(std::mt19937& engine, T min, T max) : engine(&engine), dist(min, max) {}
+		T next() { return dist(*engine); }
 
 	private:
-		std::mt19937& m_engine;
-		Distribution m_dist;
+		std::mt19937* engine;
+		Distribution dist;
 	};
-	template <typename T> auto Range(T min, T max) const -> Generator<T> { return Generator<T>(m_engine, min, max); }
+	template <typename T> Generator<T> range(T min, T max) const { return Generator<T>(engine, min, max); }
 
 private:
-	mutable std::mt19937 m_engine;
+	mutable std::mt19937 engine;
 };
 
 static const Random RANDOM_INSTANCE;

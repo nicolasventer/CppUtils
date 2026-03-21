@@ -1,10 +1,11 @@
 #include "Inquirer.hpp"
 #include "terminal.hpp"
 #include <iostream>
+#include <string>
 
 int main()
 {
-	enable_ansi_terminal();
+	enableAnsiTerminal();
 
 	std::string name = Inquirer::input("Project name", "my-app");
 

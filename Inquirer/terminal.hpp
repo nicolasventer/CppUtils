@@ -4,7 +4,7 @@
 #include <windows.h>
 #endif
 
-inline void enable_ansi_terminal()
+inline void enableAnsiTerminal()
 {
 #ifdef _WIN32
 	SetConsoleOutputCP(CP_UTF8);

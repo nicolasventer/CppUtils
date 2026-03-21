@@ -1,7 +1,10 @@
 #include "inquirer.hpp"
 
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <conio.h>
@@ -13,44 +16,42 @@
 
 namespace ansi
 {
-	const std::string reset = "\033[0m";
-	const std::string green = "\033[32m";
-	const std::string cyan = "\033[36m";
-	const std::string gray = "\033[90m";
+	static const auto RESET = "\033[0m";
+	static const auto GREEN = "\033[32m";
+	static const auto CYAN = "\033[36m";
+	static const auto GRAY = "\033[90m";
 } // namespace ansi
 
 #ifdef _WIN32
-const std::string ARROW = "> ";
+static const auto ARROW = "> ";
 #else
-const std::string ARROW = "❯ ";
+static const auto ARROW = "❯ ";
 #endif
 
-const std::string RADIO_ON = "◉";
-const std::string RADIO_OFF = "◯";
-const std::string CHECK_ON = "◼";
-const std::string CHECK_OFF = "◻";
+static const auto RADIO_ON = "◉";
+static const auto RADIO_OFF = "◯";
+static const auto CHECK_ON = "◼";
+static const auto CHECK_OFF = "◻";
 
-enum Key
+enum class EKey : uint8_t
 {
-	KEY_NONE,
-	KEY_UP,
-	KEY_DOWN,
-	KEY_ENTER,
-	KEY_SPACE,
-	KEY_CHAR
+	None,
+	Up,
+	Down,
+	Enter,
+	Space,
+	Char
 };
 
 struct KeyEvent
 {
-	Key type;
+	EKey type;
 	char ch;
 };
 
 #ifdef _WIN32
 class RawMode
 {
-public:
-	RawMode() {}
 };
 #else
 class RawMode
@@ -65,37 +66,41 @@ public:
 		raw.c_lflag &= ~(ICANON | ECHO);
 		tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 	}
+	RawMode(const RawMode&) = delete;
+	RawMode& operator=(const RawMode&) = delete;
+	RawMode(RawMode&&) noexcept = default;
+	RawMode& operator=(RawMode&&) noexcept = default;
 
 	~RawMode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig); }
 };
 #endif
 
-void ctrl_c_exit()
+static void ctrlCExit()
 {
-	std::cout << ansi::reset << "\nCancelled.\n";
+	std::cout << ansi::RESET << "\nCancelled.\n";
 	std::exit(130);
 }
 
-KeyEvent read_key()
+static KeyEvent readKey()
 {
 
 #ifdef _WIN32
 
 	int c = _getch();
 
-	if (c == 3) ctrl_c_exit();
+	if (c == 3) ctrlCExit();
 
-	if (c == 13) return {KEY_ENTER, 0};
-	if (c == ' ') return {KEY_SPACE, 0};
+	if (c == 13) return {EKey::Enter, 0};
+	if (c == ' ') return {EKey::Space, 0};
 
 	if (c == 224 || c == 0)
 	{
 		int k = _getch();
-		if (k == 72) return {KEY_UP, 0};
-		if (k == 80) return {KEY_DOWN, 0};
+		if (k == 72) return {EKey::Up, 0};
+		if (k == 80) return {EKey::Down, 0};
 	}
 
-	return {KEY_CHAR, (char)c};
+	return {EKey::Char, (char)c};
 
 #else
 
@@ -104,8 +109,8 @@ KeyEvent read_key()
 
 	if (c == 3) ctrl_c_exit();
 
-	if (c == '\n') return {KEY_ENTER, 0};
-	if (c == ' ') return {KEY_SPACE, 0};
+	if (c == '\n') return {EKey::Enter, 0};
+	if (c == ' ') return {EKey::Space, 0};
 
 	if (c == '\033')
 	{
@@ -115,62 +120,59 @@ KeyEvent read_key()
 
 		if (seq[0] == '[')
 		{
-			if (seq[1] == 'A') return {KEY_UP, 0};
-			if (seq[1] == 'B') return {KEY_DOWN, 0};
+			if (seq[1] == 'A') return {EKey::Up, 0};
+			if (seq[1] == 'B') return {EKey::Down, 0};
 		}
 	}
 
-	return {KEY_CHAR, c};
+	return {EKey::Char, c};
 
 #endif
 }
 
-void clear_lines(size_t n)
+static void clearLines(size_t n)
 {
 	for (size_t i = 0; i < n; i++) std::cout << "\033[1A\033[2K";
 }
 
 std::string Inquirer::input(const std::string& question, const std::string& default_value)
 {
-	RawMode rm;
+	[[maybe_unused]] RawMode rm;
 	std::string buffer;
 
 	while (true)
 	{
 		std::cout << "\r\033[2K";
-		std::cout << ansi::cyan << "? " << question << ": " << ansi::reset;
+		std::cout << ansi::CYAN << "? " << question << ": " << ansi::RESET;
 
-		if (buffer.empty() && !default_value.empty()) std::cout << ansi::gray << "(" << default_value << ")" << ansi::reset;
-		else
-			std::cout << buffer;
+		if (buffer.empty() && !default_value.empty()) std::cout << ansi::GRAY << "(" << default_value << ")" << ansi::RESET;
+		else std::cout << buffer;
 
 		std::cout.flush();
 
-		auto key = read_key();
+		auto key = readKey();
 
-		if (key.type == KEY_ENTER) break;
+		if (key.type == EKey::Enter) break;
 
-		if (key.type == KEY_CHAR && (key.ch == 127 || key.ch == 8))
+		if (key.type == EKey::Char && (key.ch == 127 || key.ch == 8))
 		{
 			if (!buffer.empty()) buffer.pop_back();
 		}
-		else if (key.type == KEY_CHAR)
-			buffer += key.ch;
-		else if (key.type == KEY_SPACE)
-			buffer += ' ';
+		else if (key.type == EKey::Char) buffer += key.ch;
+		else if (key.type == EKey::Space) buffer += ' ';
 	}
 
 	if (buffer.empty() && !default_value.empty()) buffer = default_value;
 
 	std::cout << "\r\033[2K";
-	std::cout << ansi::green << "✔ " << question << ": " << buffer << ansi::reset << "\n";
+	std::cout << ansi::GREEN << "✔ " << question << ": " << buffer << ansi::RESET << "\n";
 
 	return buffer;
 }
 
 bool Inquirer::confirm(const std::string& question, bool def)
 {
-	std::cout << ansi::cyan << "? " << question << (def ? " (Y/n): " : " (y/N): ") << ansi::reset;
+	std::cout << ansi::CYAN << "? " << question << (def ? " (Y/n): " : " (y/N): ") << ansi::RESET;
 
 	std::string input;
 	std::getline(std::cin, input);
@@ -185,42 +187,41 @@ bool Inquirer::confirm(const std::string& question, bool def)
 		if (c == 'n' || c == 'N') result = false;
 	}
 
-	std::cout << ansi::green << "✔ " << question << ": " << (result ? "Yes" : "No") << ansi::reset << "\n";
+	std::cout << ansi::GREEN << "✔ " << question << ": " << (result ? "Yes" : "No") << ansi::RESET << "\n";
 
 	return result;
 }
 
 std::string Inquirer::select(const std::string& question, const std::vector<std::string>& options, size_t default_index)
 {
-	RawMode rm;
+	[[maybe_unused]] RawMode rm;
 	size_t selected = default_index;
 
-	std::cout << ansi::cyan << "? " << question << "\n";
-	std::cout << ansi::gray << "  ↑↓ navigate • enter submit" << ansi::reset << "\n";
+	std::cout << ansi::CYAN << "? " << question << "\n";
+	std::cout << ansi::GRAY << "  ↑↓ navigate • enter submit" << ansi::RESET << "\n";
 
 	while (true)
 	{
 		for (size_t i = 0; i < options.size(); i++)
 		{
-			if (i == selected) std::cout << ansi::green << ARROW << RADIO_ON << " " << options[i] << ansi::reset << "\n";
-			else
-				std::cout << "  " << RADIO_OFF << " " << options[i] << "\n";
+			if (i == selected) std::cout << ansi::GREEN << ARROW << RADIO_ON << " " << options[i] << ansi::RESET << "\n";
+			else std::cout << "  " << RADIO_OFF << " " << options[i] << "\n";
 		}
 
-		auto key = read_key();
+		auto key = readKey();
 
-		if (key.type == KEY_UP && selected > 0) selected--;
+		if (key.type == EKey::Up && selected > 0) selected--;
 
-		if (key.type == KEY_DOWN && selected + 1 < options.size()) selected++;
+		if (key.type == EKey::Down && selected + 1 < options.size()) selected++;
 
-		if (key.type == KEY_ENTER) break;
+		if (key.type == EKey::Enter) break;
 
-		clear_lines(options.size());
+		clearLines(options.size());
 	}
 
-	clear_lines(options.size());
+	clearLines(options.size());
 
-	std::cout << ansi::green << "✔ " << question << ": " << options[selected] << ansi::reset << "\n";
+	std::cout << ansi::GREEN << "✔ " << question << ": " << options[selected] << ansi::RESET << "\n";
 
 	return options[selected];
 }
@@ -228,7 +229,7 @@ std::string Inquirer::select(const std::string& question, const std::vector<std:
 std::vector<std::string> Inquirer::multiselect(
 	const std::string& question, const std::vector<std::string>& options, const std::vector<size_t>& defaults)
 {
-	RawMode rm;
+	[[maybe_unused]] RawMode rm;
 
 	size_t cursor = 0;
 	std::vector<char> selected(options.size(), 0);
@@ -236,8 +237,8 @@ std::vector<std::string> Inquirer::multiselect(
 	for (auto i : defaults)
 		if (i < options.size()) selected[i] = 1;
 
-	std::cout << ansi::cyan << "? " << question << "\n";
-	std::cout << ansi::gray << "  ↑↓ navigate • space select • a all • i invert • enter submit" << ansi::reset << "\n";
+	std::cout << ansi::CYAN << "? " << question << "\n";
+	std::cout << ansi::GRAY << "  ↑↓ navigate • space select • a all • i invert • enter submit" << ansi::RESET << "\n";
 
 	while (true)
 	{
@@ -245,20 +246,19 @@ std::vector<std::string> Inquirer::multiselect(
 		{
 			std::string mark = selected[i] ? CHECK_ON : CHECK_OFF;
 
-			if (i == cursor) std::cout << ansi::green << ARROW << mark << " " << options[i] << ansi::reset << "\n";
-			else
-				std::cout << "  " << mark << " " << options[i] << "\n";
+			if (i == cursor) std::cout << ansi::GREEN << ARROW << mark << " " << options[i] << ansi::RESET << "\n";
+			else std::cout << "  " << mark << " " << options[i] << "\n";
 		}
 
-		auto key = read_key();
+		auto key = readKey();
 
-		if (key.type == KEY_UP && cursor > 0) cursor--;
+		if (key.type == EKey::Up && cursor > 0) cursor--;
 
-		if (key.type == KEY_DOWN && cursor < options.size() - 1) cursor++;
+		if (key.type == EKey::Down && cursor < options.size() - 1) cursor++;
 
-		if (key.type == KEY_SPACE) selected[cursor] = !selected[cursor];
+		if (key.type == EKey::Space) selected[cursor] = !selected[cursor];
 
-		if (key.type == KEY_CHAR)
+		if (key.type == EKey::Char)
 		{
 			if (key.ch == 'a')
 				for (auto& s : selected) s = 1;
@@ -267,19 +267,19 @@ std::vector<std::string> Inquirer::multiselect(
 				for (auto& s : selected) s = !s;
 		}
 
-		if (key.type == KEY_ENTER) break;
+		if (key.type == EKey::Enter) break;
 
-		clear_lines(options.size());
+		clearLines(options.size());
 	}
 
-	clear_lines(options.size());
+	clearLines(options.size());
 
 	std::vector<std::string> result;
 
 	for (size_t i = 0; i < options.size(); i++)
 		if (selected[i]) result.push_back(options[i]);
 
-	std::cout << ansi::green << "✔ " << question << ansi::reset << "\n";
+	std::cout << ansi::GREEN << "✔ " << question << ansi::RESET << "\n";
 
 	return result;
 }
