@@ -26,4 +26,4 @@ private:
 	mutable std::mt19937 engine;
 };
 
-static const Random RANDOM_INSTANCE;
+inline const Random RANDOM_INSTANCE;
