@@ -8,7 +8,7 @@
 #include <stdio.h>
 #endif
 
-#include "PrintConfig.h"
+#include "print_config.h" // IWYU pragma: keep
 
 #if defined(__clang__)
 #define P_PRINT_FMT_DIAG_PUSH()                      \
@@ -51,7 +51,7 @@
 		P_PRINT_SELECT(P_PRINT_NARG(__VA_ARGS__))(__VA_ARGS__); \
 	} while (0)
 
-#define PRINTLN(...) PRINT(__VA_ARGS__, "\n")
+#define PRINT_LN(...) PRINT(__VA_ARGS__, "\n")
 
 #ifndef P_PRINT_SPACE
 #define P_PRINT_SPACE() printf(" ")

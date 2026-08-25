@@ -1,13 +1,13 @@
-#include "Print.h"
+#include "print.h"
 
 #ifdef __cplusplus
 #include <cstdio>
 #else
-#include <stdio.h>
+#include <stdio.h> // IWYU pragma: keep
 #endif
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #define DEBUG 0
 #define INFO  1
@@ -15,10 +15,24 @@
 #define ERROR 3
 #define FATAL 4
 
-#include "LogConfig.h"
+#include "logger_config.h" // IWYU pragma: keep
 
 #ifndef LOG_LEVEL
+
+#if defined(SET_LOG_LEVEL_FATAL)
+#define LOG_LEVEL FATAL
+#elif defined(SET_LOG_LEVEL_ERROR)
+#define LOG_LEVEL ERROR
+#elif defined(SET_LOG_LEVEL_WARN)
+#define LOG_LEVEL WARN
+#elif defined(SET_LOG_LEVEL_INFO)
+#define LOG_LEVEL INFO
+#elif defined(SET_LOG_LEVEL_DEBUG)
 #define LOG_LEVEL DEBUG
+#else
+#define LOG_LEVEL DEBUG
+#endif
+
 #endif
 
 #define P_LOG_RESET	 "\033[0m"
@@ -35,12 +49,22 @@
 #define P_LOG_ERROR P_LOG_RED
 #define P_LOG_FATAL P_LOG_RED_BG
 
-#define P_LOG_IMPL(level, ...)                                  \
-	do                                                          \
-	{                                                           \
-		printf("%s%s:%d: ", P_LOG_##level, __FILE__, __LINE__); \
-		PRINT(__VA_ARGS__);                                     \
-		printf("%s\n", P_LOG_RESET);                            \
+inline int* logPathOffset(void)
+{
+	static int value = 0;
+	return &value;
+}
+
+#define INIT_LOG_PATH_OFFSET() *logPathOffset() = strlen(__FILE__) - strlen(__FILE_NAME__)
+
+static inline const char* stripPrefix(const char* s) { return s + *logPathOffset(); }
+
+#define P_LOG_IMPL(level, ...)                                                \
+	do                                                                        \
+	{                                                                         \
+		printf("%5s%s:%d: ", P_LOG_##level, stripPrefix(__FILE__), __LINE__); \
+		PRINT(__VA_ARGS__);                                                   \
+		printf("%s\n", P_LOG_RESET);                                          \
 	} while (0)
 
 #define LOG_DEBUG(...) P_LOG_IMPL(DEBUG, __VA_ARGS__)
@@ -77,4 +101,7 @@
 #define LOG(level, ...)
 #endif
 
-#endif // LOG_H
+// should be used like this: LOG_DEBUG("myBool", AS_BOOL(myBool))
+#define AS_BOOL(x) ((x) ? "true" : "false")
+
+#endif // LOGGER_H

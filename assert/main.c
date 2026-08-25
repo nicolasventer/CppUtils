@@ -1,4 +1,4 @@
-#include "Assert.h"
+#include "assert.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -25,4 +25,3 @@ int main(int argc, char* argv[])
 	(void)fprintf(stderr, "unknown: %s (try pass or fail)\n", argv[1]);
 	return 2;
 }
-
